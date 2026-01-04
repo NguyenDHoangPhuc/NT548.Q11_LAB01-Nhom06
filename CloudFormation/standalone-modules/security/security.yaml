@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'NT548 LAB01 - Security Module (Security Groups)'
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: 'nt548-lab01'
+  
+  Environment:
+    Type: String
+    Default: 'dev'
+  
+  MyIP:
+    Type: String
+    Description: 'Your IP address for SSH access (format: x.x.x.x/32)'
+    AllowedPattern: '^(\d{1,3}\.){3}\d{1,3}/\d{1,2}$'
+
+Resources:
+  # Security Group for Public EC2
+  PublicSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${ProjectName}-${Environment}-public-sg'
+      GroupDescription: 'Security group for public EC2 instance'
+      VpcId: !ImportValue
+        Fn::Sub: '${ProjectName}-${Environment}-VpcId'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref MyIP
+          Description: 'SSH from my IP'
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: '0.0.0.0/0'
+          Description: 'HTTP from anywhere'
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: '0.0.0.0/0'
+          Description: 'All outbound traffic'
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-public-sg'
+
+  # Security Group for Private EC2
+  PrivateSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${ProjectName}-${Environment}-private-sg'
+      GroupDescription: 'Security group for private EC2 instance'
+      VpcId: !ImportValue
+        Fn::Sub: '${ProjectName}-${Environment}-VpcId'
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: '0.0.0.0/0'
+          Description: 'All outbound traffic'
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-private-sg'
+
+  # Allow SSH from Public SG to Private SG
+  PrivateIngressRule:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref PrivateSecurityGroup
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      SourceSecurityGroupId: !Ref PublicSecurityGroup
+      Description: 'SSH from public instance'
+
+Outputs:
+  PublicSecurityGroupId:
+    Description: Public Security Group ID
+    Value: !Ref PublicSecurityGroup
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-PublicSG'
+  
+  PrivateSecurityGroupId:
+    Description: Private Security Group ID
+    Value: !Ref PrivateSecurityGroup
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-PrivateSG'

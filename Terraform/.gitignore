@@ -1,0 +1,160 @@
+# ============================================
+# TERRAFORM FILES - MUST IGNORE
+# ============================================
+
+# Local .terraform directories (contains providers)
+**/.terraform/*
+.terraform/
+
+# .tfstate files (contains ALL resource IDs, IPs, sensitive data)
+*.tfstate
+*.tfstate.*
+terraform.tfstate
+terraform.tfstate.backup
+
+# Crash log files
+crash.log
+crash.*.log
+
+# ============================================
+# SENSITIVE DATA - NEVER COMMIT!
+# ============================================
+
+# tfvars files contain AWS credentials and secrets
+*.tfvars
+*.tfvars.json
+terraform.tfvars
+*.auto.tfvars
+
+# SSH private keys
+*.pem
+*.key
+*.ppk
+working-key.pem
+
+# AWS credentials
+.aws/
+credentials
+
+# Environment files
+.env
+.env.local
+*.env
+
+# ============================================
+# TERRAFORM CONFIGURATION
+# ============================================
+
+# Ignore override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc
+
+# Lock file (optional - some teams commit this)
+.terraform.lock.hcl
+
+# ============================================
+# IDE AND EDITOR FILES
+# ============================================
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# JetBrains IDEs (IntelliJ, PyCharm, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim
+*.swp
+*.swo
+*~
+.*.sw?
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ============================================
+# OPERATING SYSTEM FILES
+# ============================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ============================================
+# BACKUP AND TEMPORARY FILES
+# ============================================
+
+# Backup files
+*.backup
+*.bak
+*.orig
+*.tmp
+
+# Log files
+*.log
+logs/
+
+# Output files
+outputs.txt
+*.output
+
+# ============================================
+# TESTING AND BUILD
+# ============================================
+
+# Test results
+test-results/
+.pytest_cache/
+__pycache__/
+
+# Coverage reports
+coverage/
+*.coverage
+
+# ============================================
+# PROJECT SPECIFIC
+# ============================================
+
+# Ignore any file with "secret" or "private" in name
+*secret*
+*private*
+*SECRET*
+*PRIVATE*
+
+# Ignore any AWS output files
+aws-outputs.json
+infrastructure-outputs.json
+
+# Ignore deployment logs
+deploy.log
+deployment-*.log

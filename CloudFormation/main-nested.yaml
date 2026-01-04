@@ -1,0 +1,266 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'NT548 LAB 01 - Root Stack using Nested Stacks (Module Architecture)
+  This template demonstrates proper CloudFormation module structure using nested stacks.
+  Each component (VPC, Network, Security Groups, EC2) is defined as a separate module.'
+
+# ============================================================================
+# METADATA
+# ============================================================================
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Network Configuration"
+        Parameters:
+          - VpcCIDR
+          - PublicSubnetCIDR
+          - PrivateSubnetCIDR
+      - Label:
+          default: "EC2 Configuration"
+        Parameters:
+          - KeyName
+          - InstanceType
+          - MyIP
+      - Label:
+          default: "Module Configuration"
+        Parameters:
+          - TemplateS3Bucket
+          - TemplateS3Prefix
+      - Label:
+          default: "Project Tags"
+        Parameters:
+          - ProjectName
+          - Environment
+
+# ============================================================================
+# PARAMETERS
+# ============================================================================
+Parameters:
+  ProjectName:
+    Type: String
+    Default: nt548-lab01
+    Description: Project name for resource tagging
+
+  Environment:
+    Type: String
+    Default: dev
+    Description: Environment name (dev, staging, prod)
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
+  VpcCIDR:
+    Type: String
+    Default: 10.0.0.0/16
+    Description: CIDR block for VPC
+
+  PublicSubnetCIDR:
+    Type: String
+    Default: 10.0.1.0/24
+    Description: CIDR block for Public Subnet
+
+  PrivateSubnetCIDR:
+    Type: String
+    Default: 10.0.2.0/24
+    Description: CIDR block for Private Subnet
+
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: nt548-lab01-key
+    Description: EC2 Key Pair for SSH access
+
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    Description: EC2 Instance Type
+    AllowedValues:
+      - t2.micro
+      - t3.micro
+      - t3.small
+
+  MyIP:
+    Type: String
+    Default: 42.113.225.23/32
+    Description: Your IP address for SSH access
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id
+    Description: Latest Ubuntu 24.04 LTS AMI ID
+
+  TemplateS3Bucket:
+    Type: String
+    Description: S3 bucket name where nested stack templates are stored
+    Default: ''
+
+  TemplateS3Prefix:
+    Type: String
+    Description: S3 prefix (folder) for nested stack templates
+    Default: cloudformation/modules
+
+# ============================================================================
+# CONDITIONS
+# ============================================================================
+Conditions:
+  UseS3Templates: !Not [!Equals [!Ref TemplateS3Bucket, '']]
+
+# ============================================================================
+# RESOURCES - NESTED STACKS
+# ============================================================================
+Resources:
+  # ============================================================================
+  # VPC MODULE
+  # ============================================================================
+  VPCStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !If
+        - UseS3Templates
+        - !Sub 'https://${TemplateS3Bucket}.s3.amazonaws.com/${TemplateS3Prefix}/vpc.yaml'
+        - !Sub 'https://s3.amazonaws.com/${AWS::StackName}-templates/vpc.yaml'
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+        VpcCIDR: !Ref VpcCIDR
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-vpc-stack'
+        - Key: Module
+          Value: VPC
+
+  # ============================================================================
+  # NETWORK MODULE (Subnets, IGW, NAT, Routes)
+  # ============================================================================
+  NetworkStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: VPCStack
+    Properties:
+      TemplateURL: !If
+        - UseS3Templates
+        - !Sub 'https://${TemplateS3Bucket}.s3.amazonaws.com/${TemplateS3Prefix}/network.yaml'
+        - !Sub 'https://s3.amazonaws.com/${AWS::StackName}-templates/network.yaml'
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+        VpcId: !GetAtt VPCStack.Outputs.VpcId
+        PublicSubnetCIDR: !Ref PublicSubnetCIDR
+        PrivateSubnetCIDR: !Ref PrivateSubnetCIDR
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-network-stack'
+        - Key: Module
+          Value: Network
+
+  # ============================================================================
+  # SECURITY GROUPS MODULE
+  # ============================================================================
+  SecurityGroupsStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: VPCStack
+    Properties:
+      TemplateURL: !If
+        - UseS3Templates
+        - !Sub 'https://${TemplateS3Bucket}.s3.amazonaws.com/${TemplateS3Prefix}/security-groups.yaml'
+        - !Sub 'https://s3.amazonaws.com/${AWS::StackName}-templates/security-groups.yaml'
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+        VpcId: !GetAtt VPCStack.Outputs.VpcId
+        MyIP: !Ref MyIP
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-security-stack'
+        - Key: Module
+          Value: SecurityGroups
+
+  # ============================================================================
+  # EC2 MODULE
+  # ============================================================================
+  EC2Stack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - NetworkStack
+      - SecurityGroupsStack
+    Properties:
+      TemplateURL: !If
+        - UseS3Templates
+        - !Sub 'https://${TemplateS3Bucket}.s3.amazonaws.com/${TemplateS3Prefix}/ec2.yaml'
+        - !Sub 'https://s3.amazonaws.com/${AWS::StackName}-templates/ec2.yaml'
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+        KeyName: !Ref KeyName
+        InstanceType: !Ref InstanceType
+        LatestAmiId: !Ref LatestAmiId
+        PublicSubnetId: !GetAtt NetworkStack.Outputs.PublicSubnetId
+        PrivateSubnetId: !GetAtt NetworkStack.Outputs.PrivateSubnetId
+        PublicSecurityGroupId: !GetAtt SecurityGroupsStack.Outputs.PublicSecurityGroupId
+        PrivateSecurityGroupId: !GetAtt SecurityGroupsStack.Outputs.PrivateSecurityGroupId
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-ec2-stack'
+        - Key: Module
+          Value: EC2
+
+# ============================================================================
+# OUTPUTS
+# ============================================================================
+Outputs:
+  # VPC Outputs
+  VpcId:
+    Description: VPC ID from VPC Module
+    Value: !GetAtt VPCStack.Outputs.VpcId
+
+  # Network Outputs
+  PublicSubnetId:
+    Description: Public Subnet ID from Network Module
+    Value: !GetAtt NetworkStack.Outputs.PublicSubnetId
+
+  PrivateSubnetId:
+    Description: Private Subnet ID from Network Module
+    Value: !GetAtt NetworkStack.Outputs.PrivateSubnetId
+
+  NatGatewayId:
+    Description: NAT Gateway ID from Network Module
+    Value: !GetAtt NetworkStack.Outputs.NatGatewayId
+
+  # Security Groups Outputs
+  PublicSecurityGroupId:
+    Description: Public Security Group ID from Security Module
+    Value: !GetAtt SecurityGroupsStack.Outputs.PublicSecurityGroupId
+
+  PrivateSecurityGroupId:
+    Description: Private Security Group ID from Security Module
+    Value: !GetAtt SecurityGroupsStack.Outputs.PrivateSecurityGroupId
+
+  # EC2 Outputs
+  PublicEC2InstanceId:
+    Description: Public EC2 Instance ID from EC2 Module
+    Value: !GetAtt EC2Stack.Outputs.PublicEC2InstanceId
+
+  PublicEC2PublicIP:
+    Description: Public EC2 Public IP (SSH Entry Point)
+    Value: !GetAtt EC2Stack.Outputs.PublicEC2PublicIP
+
+  PrivateEC2InstanceId:
+    Description: Private EC2 Instance ID from EC2 Module
+    Value: !GetAtt EC2Stack.Outputs.PrivateEC2InstanceId
+
+  PrivateEC2PrivateIP:
+    Description: Private EC2 Private IP (No Public IP)
+    Value: !GetAtt EC2Stack.Outputs.PrivateEC2PrivateIP
+
+  # Connection Info
+  SSHCommand:
+    Description: SSH command to connect to Public EC2
+    Value: !Sub 'ssh -i ${KeyName}.pem ubuntu@${EC2Stack.Outputs.PublicEC2PublicIP}'
+
+  SSHToPrivateCommand:
+    Description: SSH command to connect to Private EC2 via Public EC2 (bastion)
+    Value: !Sub 'ssh -i ${KeyName}.pem -J ubuntu@${EC2Stack.Outputs.PublicEC2PublicIP} ubuntu@${EC2Stack.Outputs.PrivateEC2PrivateIP}'
+
+  # Module Architecture Info
+  ModuleArchitecture:
+    Description: This stack uses CloudFormation Nested Stacks (Module Pattern)
+    Value: 'VPC Module + Network Module + Security Groups Module + EC2 Module'

@@ -1,0 +1,98 @@
+# .gitignore for CloudFormation Project
+
+# ============================================================================
+# SENSITIVE FILES - NEVER COMMIT!
+# ============================================================================
+
+# SSH Private Keys
+*.pem
+*.ppk
+working-key.*
+*.key
+
+# AWS Credentials
+.aws/
+credentials
+config
+
+# Parameters with sensitive data
+# parameters.json  # Uncomment if you have real credentials here
+
+# ============================================================================
+# AWS CloudFormation
+# ============================================================================
+
+# CloudFormation generated files
+.cfn/
+cfn-response.json
+
+# Change sets
+change-set-*.json
+
+# ============================================================================
+# EDITOR & IDE
+# ============================================================================
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# JetBrains IDEs
+.idea/
+*.iml
+
+# ============================================================================
+# OS SPECIFIC
+# ============================================================================
+
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.directory
+
+# ============================================================================
+# LOGS & TEMPORARY FILES
+# ============================================================================
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# ============================================================================
+# BACKUP FILES
+# ============================================================================
+
+# Backup files
+*.backup
+backup/
+old/
+
+# ============================================================================
+# PROJECT SPECIFIC
+# ============================================================================
+
+# Test outputs
+test-results/
+test-output/
+
+# Local configuration overrides
+local.parameters.json
+dev.parameters.json
+*.local.*

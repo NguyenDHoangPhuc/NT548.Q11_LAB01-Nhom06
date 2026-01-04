@@ -1,0 +1,207 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'NT548 LAB01 - EC2 Module (Public and Private Instances)'
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: 'nt548-lab01'
+  
+  Environment:
+    Type: String
+    Default: 'dev'
+  
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: 'EC2 Key Pair for SSH access'
+  
+  InstanceType:
+    Type: String
+    Default: 't3.micro'
+    AllowedValues:
+      - t2.micro
+      - t3.micro
+      - t3.small
+  
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: '/aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id'
+    Description: 'Latest Ubuntu 22.04 LTS AMI'
+
+Resources:
+  # Public EC2 Instance (Bastion)
+  PublicEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref LatestAmiId
+      KeyName: !Ref KeyName
+      SubnetId: !ImportValue
+        Fn::Sub: '${ProjectName}-${Environment}-PublicSubnetId'
+      SecurityGroupIds:
+        - !ImportValue
+            Fn::Sub: '${ProjectName}-${Environment}-PublicSG'
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+          
+          # Update system
+          apt-get update -y
+          apt-get upgrade -y
+          
+          # Install Apache
+          apt-get install -y apache2
+          
+          # Get instance metadata
+          INSTANCE_ID=$(ec2-metadata --instance-id | cut -d " " -f 2)
+          AVAILABILITY_ZONE=$(ec2-metadata --availability-zone | cut -d " " -f 2)
+          
+          # Create custom homepage
+          cat > /var/www/html/index.html <<EOF
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>NT548 LAB01 - Public Instance</title>
+              <style>
+                  body { font-family: Arial; margin: 50px; background: #f0f0f0; }
+                  .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                  h1 { color: #007bff; }
+                  .info { background: #e7f3ff; padding: 15px; border-left: 4px solid #007bff; margin: 10px 0; }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>[PUBLIC] NT548 LAB01 - CloudFormation Modules</h1>
+                  <div class="info">
+                      <p><strong>Instance Type:</strong> Public EC2 (Bastion Host)</p>
+                      <p><strong>Instance ID:</strong> $INSTANCE_ID</p>
+                      <p><strong>Availability Zone:</strong> $AVAILABILITY_ZONE</p>
+                      <p><strong>Module:</strong> EC2 Module</p>
+                      <p><strong>Architecture:</strong> Standalone Modules (No S3 Required)</p>
+                  </div>
+              </div>
+          </body>
+          </html>
+          EOF
+          
+          # Start Apache
+          systemctl enable apache2
+          systemctl start apache2
+          
+          # Log success
+          echo "User data script completed successfully" >> /var/log/user-data.log
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-public-ec2'
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Type
+          Value: 'Bastion'
+
+  # Private EC2 Instance
+  PrivateEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref LatestAmiId
+      KeyName: !Ref KeyName
+      SubnetId: !ImportValue
+        Fn::Sub: '${ProjectName}-${Environment}-PrivateSubnetId'
+      SecurityGroupIds:
+        - !ImportValue
+            Fn::Sub: '${ProjectName}-${Environment}-PrivateSG'
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+          
+          # Update system
+          apt-get update -y
+          apt-get upgrade -y
+          
+          # Install Apache
+          apt-get install -y apache2
+          
+          # Get instance metadata
+          INSTANCE_ID=$(ec2-metadata --instance-id | cut -d " " -f 2)
+          AVAILABILITY_ZONE=$(ec2-metadata --availability-zone | cut -d " " -f 2)
+          
+          # Create custom homepage
+          cat > /var/www/html/index.html <<EOF
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>NT548 LAB01 - Private Instance</title>
+              <style>
+                  body { font-family: Arial; margin: 50px; background: #f0f0f0; }
+                  .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                  h1 { color: #28a745; }
+                  .info { background: #d4edda; padding: 15px; border-left: 4px solid #28a745; margin: 10px 0; }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>[PRIVATE] NT548 LAB01 - CloudFormation Modules</h1>
+                  <div class="info">
+                      <p><strong>Instance Type:</strong> Private EC2 (Internal)</p>
+                      <p><strong>Instance ID:</strong> $INSTANCE_ID</p>
+                      <p><strong>Availability Zone:</strong> $AVAILABILITY_ZONE</p>
+                      <p><strong>Module:</strong> EC2 Module</p>
+                      <p><strong>Architecture:</strong> Standalone Modules (No S3 Required)</p>
+                      <p><strong>Note:</strong> This instance is in private subnet, accessible only via Bastion</p>
+                  </div>
+              </div>
+          </body>
+          </html>
+          EOF
+          
+          # Start Apache
+          systemctl enable apache2
+          systemctl start apache2
+          
+          # Log success
+          echo "User data script completed successfully" >> /var/log/user-data.log
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-private-ec2'
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Type
+          Value: 'Private'
+
+Outputs:
+  PublicInstanceId:
+    Description: Public EC2 Instance ID
+    Value: !Ref PublicEC2Instance
+  
+  PublicInstancePublicIP:
+    Description: Public EC2 Instance Public IP
+    Value: !GetAtt PublicEC2Instance.PublicIp
+  
+  PublicInstancePrivateIP:
+    Description: Public EC2 Instance Private IP
+    Value: !GetAtt PublicEC2Instance.PrivateIp
+  
+  PrivateInstanceId:
+    Description: Private EC2 Instance ID
+    Value: !Ref PrivateEC2Instance
+  
+  PrivateInstancePrivateIP:
+    Description: Private EC2 Instance Private IP
+    Value: !GetAtt PrivateEC2Instance.PrivateIp
+  
+  SSHCommandPublic:
+    Description: SSH command for Public instance
+    Value: !Sub 'ssh -i ${KeyName}.pem ubuntu@${PublicEC2Instance.PublicIp}'
+  
+  SSHCommandPrivate:
+    Description: SSH command for Private instance (from bastion)
+    Value: !Sub 'ssh -i ${KeyName}.pem ubuntu@${PrivateEC2Instance.PrivateIp}'
+  
+  WebURL:
+    Description: Public instance web URL
+    Value: !Sub 'http://${PublicEC2Instance.PublicIp}'

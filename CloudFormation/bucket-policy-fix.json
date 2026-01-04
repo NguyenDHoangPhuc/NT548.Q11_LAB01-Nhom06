@@ -1,0 +1,14 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "cloudformation.amazonaws.com",
+        "AWS": "arn:aws:iam::802346121373:root"
+      },
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::nt548-lab01-nested-stack-templates-5419/*"
+    }
+  ]
+}

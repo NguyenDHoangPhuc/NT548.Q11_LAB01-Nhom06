@@ -1,0 +1,113 @@
+# ============================================
+# AWS CREDENTIALS - REPLACE WITH YOUR VALUES
+# ============================================
+
+aws_region     = "ap-southeast-1"  # Singapore region
+aws_access_key = "YOUR_AWS_ACCESS_KEY_HERE"      # Get from AWS Console > IAM > Security Credentials
+aws_secret_key = "YOUR_AWS_SECRET_KEY_HERE"      # Get from AWS Console > IAM > Security Credentials
+
+# ============================================
+# ENVIRONMENT CONFIGURATION
+# ============================================
+
+environment  = "dev"           # dev, staging, prod
+project_name = "nt548-lab01"   # Your project name
+
+# ============================================
+# VPC CONFIGURATION
+# ============================================
+
+vpc_cidr              = "10.0.0.0/16"     # VPC CIDR block (65,536 IPs)
+public_subnet_cidr    = "10.0.1.0/24"     # Public Subnet (256 IPs)
+private_subnet_cidr   = "10.0.2.0/24"     # Private Subnet (256 IPs)
+availability_zone     = "ap-southeast-1a" # Availability Zone
+
+# ============================================
+# EC2 CONFIGURATION
+# ============================================
+
+ec2_ami           = "ami-01811d4912b4ccb26" # Ubuntu 24.04 LTS in ap-southeast-1
+ec2_instance_type = "t3.micro"              # Free Tier eligible
+ec2_key_name      = "nt548-lab01-key"       # Your AWS Key Pair name (create in AWS Console)
+
+# ============================================
+# SECURITY CONFIGURATION
+# ============================================
+
+# ⚠️ IMPORTANT: Change this to YOUR public IP address!
+# Get your IP: https://api.ipify.org or run: (Invoke-RestMethod https://api.ipify.org)
+my_ip = "YOUR_PUBLIC_IP_HERE/32"  # Example: "42.113.225.23/32"
+
+# Why /32? It means ONLY your specific IP can SSH to EC2
+# This meets the 2-point security requirement in the lab!
+
+# ============================================
+# TAGS (OPTIONAL - CUSTOMIZE AS NEEDED)
+# ============================================
+
+common_tags = {
+  Environment = "dev"
+  Project     = "NT548-Lab01"
+  ManagedBy   = "Terraform"
+  Student     = "YourName"        # Change to your name
+  Course      = "DevOps-NT548"
+}
+
+# ============================================
+# SETUP INSTRUCTIONS
+# ============================================
+
+# 1. Copy this file to terraform.tfvars:
+#    Copy-Item terraform.tfvars.example terraform.tfvars
+#
+# 2. Edit terraform.tfvars and replace:
+#    - YOUR_AWS_ACCESS_KEY_HERE with your AWS Access Key
+#    - YOUR_AWS_SECRET_KEY_HERE with your AWS Secret Key
+#    - YOUR_PUBLIC_IP_HERE with your public IP address
+#    - YourName with your actual name
+#
+# 3. NEVER commit terraform.tfvars to Git!
+#    (It's already in .gitignore)
+#
+# 4. Get your AWS credentials:
+#    - Login to AWS Console
+#    - Go to IAM > Users > Your User > Security Credentials
+#    - Create Access Key
+#    - Download and save securely
+#
+# 5. Get your public IP:
+#    PowerShell: Invoke-RestMethod https://api.ipify.org
+#    Bash: curl https://api.ipify.org
+#
+# 6. Create AWS Key Pair:
+#    AWS Console > EC2 > Key Pairs > Create Key Pair
+#    Name: nt548-lab01-key
+#    Save as: working-key.pem
+#
+# 7. Initialize Terraform:
+#    terraform init
+#    terraform plan
+#    terraform apply
+
+# ============================================
+# SECURITY REMINDERS
+# ============================================
+
+# ⚠️ NEVER commit terraform.tfvars to version control
+# ⚠️ NEVER share your AWS credentials
+# ⚠️ ROTATE your AWS keys every 90 days
+# ⚠️ DELETE resources after testing to avoid charges ($32/month for NAT Gateway!)
+# ⚠️ Use IAM roles instead of access keys in production
+
+# ============================================
+# COST WARNING
+# ============================================
+
+# This infrastructure costs approximately $32/month
+# - NAT Gateway: ~$32/month ($0.045/hour)
+# - EC2 t3.micro x2: FREE (Free Tier: 750 hours/month)
+# - EBS 8GB x2: FREE (Free Tier: 30GB/month)
+# - Data Transfer: FREE (Free Tier: 100GB/month)
+#
+# Remember to run: terraform destroy
+# when done testing!

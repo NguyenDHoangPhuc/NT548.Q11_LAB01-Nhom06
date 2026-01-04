@@ -1,0 +1,34 @@
+[
+    {
+        "ParameterKey":  "ProjectName",
+        "ParameterValue":  "nt548-lab01"
+    },
+    {
+        "ParameterKey":  "Environment",
+        "ParameterValue":  "dev"
+    },
+    {
+        "ParameterKey":  "VpcCIDR",
+        "ParameterValue":  "10.0.0.0/16"
+    },
+    {
+        "ParameterKey":  "PublicSubnetCIDR",
+        "ParameterValue":  "10.0.1.0/24"
+    },
+    {
+        "ParameterKey":  "PrivateSubnetCIDR",
+        "ParameterValue":  "10.0.2.0/24"
+    },
+    {
+        "ParameterKey":  "KeyName",
+        "ParameterValue":  "nt548-lab01-key"
+    },
+    {
+        "ParameterKey":  "InstanceType",
+        "ParameterValue":  "t3.micro"
+    },
+    {
+        "ParameterKey":  "MyIP",
+        "ParameterValue":  "42.113.225.23/32"
+    }
+]
